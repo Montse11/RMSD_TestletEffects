@@ -1,0 +1,57 @@
+---
+title: "4. Results Analysis"
+author: "Montserrat Valdivia"
+date: '2023-06-10'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(reshape2)
+library(jtools)
+```
+
+```{r}
+load("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/irt_rmsd_tam.RData")
+load("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/trt_rmsd.RData")
+```
+
+```{r}
+nineteen = trt_rmsd %>%
+  filter(DIFper == 3 & DIFgrp == " Medium") 
+```
+
+
+```{r}
+load("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/ave_results.RData")
+```
+
+
+```{r}
+all_results25 = all_results1 %>%
+  filter(threshold == .25)
+
+
+all_results12 = all_results1 %>%
+  filter(threshold == .12)
+
+all_results14 = all_results1 %>%
+  filter(threshold == .14)
+
+all_results3 = all_results1 %>%
+  filter(threshold == .3)
+
+all_results25 =all_results25%>%
+  mutate(powabo1p = case_when(power <= 0.6 ~ 0,
+                              power > 0.6 ~ 1))
+
+all_results14 =all_results14%>%
+  mutate(powabo1p = case_when(power <= 0.6 ~ 0,
+                              power > 0.6 ~ 1))
+
+```

@@ -1,0 +1,97 @@
+---
+title: "Type I error analysis"
+author: "Montserrat Valdivia"
+date: '2023-06-07'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(R.utils)
+```
+
+
+# Call in data
+
+```{r}
+setwd("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results HPC/Results/RMSD_IRT/")
+
+# for condition 2
+files_r <- dir( pattern = "*rmsd_cond")
+files_t <- dir( pattern = "*rmsd_tam")
+
+
+irt_rmsd <- files_r %>%
+  map(loadObject) %>%
+  reduce(rbind)
+
+irt_rmsd_tam <- files_t %>%
+  map(loadObject) %>%
+  reduce(rbind)
+
+irt_rmsd_tam1 = irt_rmsd_tam %>%
+  select(-item.1, -WRMSD)
+
+```
+
+```{r}
+setwd("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results HPC/Results/RMSD_TRT/")
+
+# for condition 2
+files_trt <- dir( pattern = "*trt")
+
+trt_rmsd <- files_trt %>%
+  map(loadObject) %>%
+  reduce(rbind)
+
+
+names(trt_rmsd)[11:71]= paste0("Group", 1:61)
+
+```
+
+```{r}
+path = getwd()
+#save datasets
+save(irt_rmsd, file = "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/irt_rmsdv2.RData")
+
+save(irt_rmsd_tam1, file = "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/irt_rmsd_tamv2.RData")
+
+save(trt_rmsd, file = "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/trt_rmsdv2.RData")
+```
+
+
+# Read in data for item parameters
+
+```{r}
+setwd("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/IRT_estimates/")
+
+# for condition 2
+files_irt <- dir( pattern = "*Items")
+
+irt_par <- files_irt %>%
+  map(loadObject) %>%
+  reduce(rbind)
+
+save(irt_par, file = "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/irt_estimates.RData")
+
+```
+
+```{r}
+setwd("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/TRT_estimates/")
+
+# for condition 2
+files_trt <- dir( pattern = "*Items")
+
+trt_par <- files_trt %>%
+  map(loadObject) %>%
+  reduce(rbind)
+
+save(trt_par, file = "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/trt_estimates.RData")
+```
+

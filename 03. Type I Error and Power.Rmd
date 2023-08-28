@@ -1,0 +1,887 @@
+---
+title: "Type I error and power analysis"
+author: "Montserrat Valdivia"
+date: '2023-06-08'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(reshape2)
+library(jtools)
+```
+
+```{r}
+load("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/irt_rmsdv2.RData")
+load("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/irt_rmsd_tamv2.RData")
+load("W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Results/trt_rmsdv2.RData")
+```
+
+```{r}
+DIF_conditions = list(
+  # Baseline
+  cc01 = list(mma = 0, mmb = 0,   pp = 0, dep = 0,   type = "No DIF",  DIFcntry = "No DIF"),
+  cc110 = list(mma = 0, mmb = 0,   pp = 0, dep = .10,   type = "No DIF",  DIFcntry = "No DIF"),
+  cc111 = list(mma = 0, mmb = 0,   pp = 0, dep = .30,   type = "No DIF",  DIFcntry = "No DIF"),
+  cc112 = list(mma = 0, mmb = 0,   pp = 0, dep = .50,   type = "No DIF",  DIFcntry = "No DIF"),
+  # Uniform DIF 
+  cc02 = list(mma = 0, mmb = .31, pp = 1, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc03 = list(mma = 0, mmb = .45, pp = 1, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc04 = list(mma = 0, mmb =1.40, pp = 1, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc05 = list(mma = 0, mmb = .31, pp = 2, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc06 = list(mma = 0, mmb = .45, pp = 2, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc07 = list(mma = 0, mmb =1.40, pp = 2, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc08 = list(mma = 0, mmb = .31, pp = 3, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc09 = list(mma = 0, mmb = .45, pp = 3, dep = .10, type = "uniform", DIFcntry = "Low"),
+  cc10 = list(mma = 0, mmb =1.40, pp = 3, dep = .10, type = "uniform", DIFcntry = "Low"),
+  
+  cc11 = list(mma = 0, mmb = .31, pp = 1, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc12 = list(mma = 0, mmb = .45, pp = 1, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc13 = list(mma = 0, mmb =1.40, pp = 1, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc14 = list(mma = 0, mmb = .31, pp = 2, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc15 = list(mma = 0, mmb = .45, pp = 2, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc16 = list(mma = 0, mmb =1.40, pp = 2, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc17 = list(mma = 0, mmb = .31, pp = 3, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc18 = list(mma = 0, mmb = .45, pp = 3, dep = .30, type = "uniform", DIFcntry = "Low"),
+  cc19 = list(mma = 0, mmb =1.40, pp = 3, dep = .30, type = "uniform", DIFcntry = "Low"),
+  
+  cc20 = list(mma = 0, mmb = .31, pp = 1, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc21 = list(mma = 0, mmb = .45, pp = 1, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc22 = list(mma = 0, mmb =1.40, pp = 1, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc23 = list(mma = 0, mmb = .31, pp = 2, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc24 = list(mma = 0, mmb = .45, pp = 2, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc25 = list(mma = 0, mmb =1.40, pp = 2, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc26 = list(mma = 0, mmb = .31, pp = 3, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc27 = list(mma = 0, mmb = .45, pp = 3, dep = .50, type = "uniform", DIFcntry = "Low"),
+  cc28 = list(mma = 0, mmb =1.40, pp = 3, dep = .50, type = "uniform", DIFcntry = "Low"),
+  
+  cc29 = list(mma = 0, mmb = .31, pp = 1, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc30 = list(mma = 0, mmb = .45, pp = 1, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc31 = list(mma = 0, mmb =1.40, pp = 1, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc32 = list(mma = 0, mmb = .31, pp = 2, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc33 = list(mma = 0, mmb = .45, pp = 2, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc34 = list(mma = 0, mmb =1.40, pp = 2, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc35 = list(mma = 0, mmb = .31, pp = 3, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc36 = list(mma = 0, mmb = .45, pp = 3, dep = .10, type = "uniform", DIFcntry = "Med"),
+  cc37 = list(mma = 0, mmb =1.40, pp = 3, dep = .10, type = "uniform", DIFcntry = "Med"),
+
+  cc38 = list(mma = 0, mmb = .31, pp = 1, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc39 = list(mma = 0, mmb = .45, pp = 1, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc40 = list(mma = 0, mmb =1.40, pp = 1, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc41 = list(mma = 0, mmb = .31, pp = 2, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc42 = list(mma = 0, mmb = .45, pp = 2, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc43 = list(mma = 0, mmb =1.40, pp = 2, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc44 = list(mma = 0, mmb = .31, pp = 3, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc45 = list(mma = 0, mmb = .45, pp = 3, dep = .30, type = "uniform", DIFcntry = "Med"),
+  cc46 = list(mma = 0, mmb =1.40, pp = 3, dep = .30, type = "uniform", DIFcntry = "Med"),
+
+  cc47 = list(mma = 0, mmb = .31, pp = 1, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc48 = list(mma = 0, mmb = .45, pp = 1, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc49 = list(mma = 0, mmb =1.40, pp = 1, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc50 = list(mma = 0, mmb = .31, pp = 2, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc51 = list(mma = 0, mmb = .45, pp = 2, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc52 = list(mma = 0, mmb =1.40, pp = 2, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc53 = list(mma = 0, mmb = .31, pp = 3, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc54 = list(mma = 0, mmb = .45, pp = 3, dep = .50, type = "uniform", DIFcntry = "Med"),
+  cc55 = list(mma = 0, mmb =1.40, pp = 3, dep = .50, type = "uniform", DIFcntry = "Med"),
+
+  # Non-uniform DIF
+  cc56 = list(mma = .10, mmb = 0, pp = 1, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc57 = list(mma = .39, mmb = 0, pp = 1, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc58 = list(mma = .91, mmb = 0, pp = 1, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc59 = list(mma = .10, mmb = 0, pp = 2, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc60 = list(mma = .39, mmb = 0, pp = 2, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc61 = list(mma = .91, mmb = 0, pp = 2, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc62 = list(mma = .10, mmb = 0, pp = 3, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc63 = list(mma = .39, mmb = 0, pp = 3, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+  cc64 = list(mma = .91, mmb = 0, pp = 3, dep = .10, type = "non-uniform", DIFcntry = "Low"),
+
+  cc65 = list(mma = .10, mmb = 0, pp = 1, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc66 = list(mma = .39, mmb = 0, pp = 1, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc67 = list(mma = .91, mmb = 0, pp = 1, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc68 = list(mma = .10, mmb = 0, pp = 2, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc69 = list(mma = .39, mmb = 0, pp = 2, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc70 = list(mma = .91, mmb = 0, pp = 2, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc71 = list(mma = .10, mmb = 0, pp = 3, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc72 = list(mma = .39, mmb = 0, pp = 3, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+  cc73 = list(mma = .91, mmb = 0, pp = 3, dep = .30, type = "non-uniform", DIFcntry = "Low"),
+
+  cc74 = list(mma = .10, mmb = 0, pp = 1, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc75 = list(mma = .39, mmb = 0, pp = 1, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc76 = list(mma = .91, mmb = 0, pp = 1, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc77 = list(mma = .10, mmb = 0, pp = 2, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc78 = list(mma = .39, mmb = 0, pp = 2, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc79 = list(mma = .91, mmb = 0, pp = 2, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc80 = list(mma = .10, mmb = 0, pp = 3, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc81 = list(mma = .39, mmb = 0, pp = 3, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+  cc82 = list(mma = .91, mmb = 0, pp = 3, dep = .50, type = "non-uniform", DIFcntry = "Low"),
+
+  cc83 = list(mma = .10, mmb = 0, pp = 1, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc84 = list(mma = .39, mmb = 0, pp = 1, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc85 = list(mma = .91, mmb = 0, pp = 1, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc86 = list(mma = .10, mmb = 0, pp = 2, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc87 = list(mma = .39, mmb = 0, pp = 2, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc88 = list(mma = .91, mmb = 0, pp = 2, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc89 = list(mma = .10, mmb = 0, pp = 3, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc90 = list(mma = .39, mmb = 0, pp = 3, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+  cc91 = list(mma = .91, mmb = 0, pp = 3, dep = .10, type = "non-uniform", DIFcntry = "Med"),
+
+  cc92 = list(mma = .10, mmb = 0, pp = 1, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc93 = list(mma = .39, mmb = 0, pp = 1, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc94 = list(mma = .91, mmb = 0, pp = 1, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc95 = list(mma = .10, mmb = 0, pp = 2, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc96 = list(mma = .39, mmb = 0, pp = 2, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc97 = list(mma = .91, mmb = 0, pp = 2, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc98 = list(mma = .10, mmb = 0, pp = 3, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc99 = list(mma = .39, mmb = 0, pp = 3, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+  cc100 = list(mma = .91, mmb = 0, pp = 3, dep = .30, type = "non-uniform", DIFcntry = "Med"),
+
+  cc101 = list(mma = .10, mmb = 0, pp = 1, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc102 = list(mma = .39, mmb = 0, pp = 1, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc103 = list(mma = .91, mmb = 0, pp = 1, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc104 = list(mma = .10, mmb = 0, pp = 2, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc105 = list(mma = .39, mmb = 0, pp = 2, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc106 = list(mma = .91, mmb = 0, pp = 2, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc107 = list(mma = .10, mmb = 0, pp = 3, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc108 = list(mma = .39, mmb = 0, pp = 3, dep = .50, type = "non-uniform", DIFcntry = "Med"),
+  cc109 = list(mma = .91, mmb = 0, pp = 3, dep = .50, type = "non-uniform", DIFcntry = "Med")
+
+)
+  
+```
+
+
+```{r}
+typeIandpower_5 = function(data, threshold){
+  
+  data1 = ifelse(data[, 11:ncol(data)] >=threshold, 1, 0)
+  data1 = as.data.frame(data1)
+  data_results = data1[FALSE, ]
+  for (i in 1:36){
+    temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == i)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+    if (i == 36){
+      temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == 0)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+ }
+  }
+  all_power = c(data_results[c(1,19), "Group2"])
+  power = mean(data_results[c(1,19), "Group2"])
+  typeIerror = (sum(unlist(data_results)) - power)/((200*36)-2)
+  typeIerror_C2 = mean(data_results[c(2:18, 20:36), "Group2"])
+  indicators = list(TypeIError = typeIerror, Ave_Power = power, Power_by_Item = all_power, 
+              TypeIError_C2 = typeIerror_C2)
+  return(indicators)
+}
+
+typeIandpower_15 = function(data, threshold){
+  
+  data1 = ifelse(data[, 11:ncol(data)] >=threshold, 1, 0)
+  data1 = as.data.frame(data1)
+  data_results = data1[FALSE, ]
+  for (i in 1:36){
+    temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == i)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+    if (i == 36){
+      temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == 0)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+ }
+  }
+  all_power = c(data_results[c(1:2,19:20), "Group2"])
+  power = mean(data_results[c(1:2,19:20), "Group2"])
+  typeIerror = (sum(unlist(data_results)) - power)/((200*36)-4)
+  typeIerror_C2 = mean(data_results[c(3:18, 21:36), "Group2"])
+  indicators = list(TypeIError = typeIerror, Ave_Power = power, Power_by_Item = all_power, 
+              TypeIError_C2 = typeIerror_C2)
+  return(indicators)
+}
+
+typeIandpower_30 = function(data, threshold){
+  
+  data1 = ifelse(data[, 11:ncol(data)] >=threshold, 1, 0)
+  data1 = as.data.frame(data1)
+  data_results = data1[FALSE, ]
+  for (i in 1:36){
+    temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == i)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+    if (i == 36){
+      temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == 0)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+ }
+  }
+  all_power = c(data_results[c(1,2,3,19,20,21), "Group2"])
+  power = mean(data_results[c(1,2,3,19,20,21), "Group2"])
+  typeIerror = (sum(unlist(data_results)) - power)/((200*36)-6)
+  typeIerror_C2 = mean(data_results[c(4:18, 22:36), "Group2"])
+  indicators = list(TypeIError = typeIerror, Ave_Power = power, Power_by_Item = all_power, 
+              TypeIError_C2 = typeIerror_C2)
+  return(indicators)
+}
+
+typeIandpower_Baseline = function(data, threshold){
+  
+  data1 = ifelse(data[, 11:ncol(data)] >=threshold, 1, 0)
+  data1 = as.data.frame(data1)
+  data_results = data1[FALSE, ]
+  for (i in 1:36){
+    temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == i)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+    if (i == 36){
+      temporal = data1[, 1:ncol(data1)] %>%
+      filter(row_number() %% 36 == 0)
+    results = colSums(temporal, na.rm = TRUE)/nrow(temporal)
+    data_results[i,] = results
+ }
+  }
+  all_power = NA
+  power = NA
+  typeIerror = (sum(unlist(data_results)))/((200*36))
+  typeIerror_C2 = mean(data_results[, "Group2"])
+  
+  both = list(TypeIError = typeIerror, Ave_Power = power, Power_by_Item = all_power, 
+              TypeIError_C2 = typeIerror_C2)
+  return(both)
+}
+
+
+computation= function(data, threshold, method){
+  final_results = NULL
+  
+  for (cc in 1:length(DIF_conditions)){
+  mma = NULL; mmb = NULL; pp = NULL; dep = NULL; type = NULL; DIFcntry = NULL; tt = NULL
+  mma = DIF_conditions[[cc]][["mma"]]
+  mmb = DIF_conditions[[cc]][["mmb"]]
+  pp = DIF_conditions[[cc]][["pp"]]
+  dep = DIF_conditions[[cc]][["dep"]]
+  type = DIF_conditions[[cc]][["type"]]
+  DIFcntry = DIF_conditions[[cc]][["DIFcntry"]]
+  tt = method
+  condition = cc
+  
+  data1 = NULL
+  data1 = subset(data, cond == cc )
+  
+  
+  if(pp == 0){res = typeIandpower_Baseline(data1, threshold)
+  }else if (pp == 1){res = typeIandpower_5(data1, threshold)
+  }else if (pp == 2){res = typeIandpower_15(data1, threshold)
+  }else if (pp == 3){res = typeIandpower_30(data1, threshold)}
+  
+  
+  
+  final = data.frame(DIFgrp = DIFcntry,
+                     DIFmmb = mmb,
+                     DIFmma = mma,
+                     DIFper = pp,
+                     DIFtype = type,
+                     effectT = dep,
+                     rmsd_mod = tt,
+                     cond = condition,
+                     typeIerror = res[[1]],
+                     typeIerror_C2 = res[[4]],
+                     power = res[[2]],
+                     row.names = NULL)
+  
+  final_results = rbind(final_results, final)
+  }
+    
+
+  return(final_results)
+}
+
+
+```
+
+
+```{r}
+results_irt_12 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .12,
+                             method = "tam")
+
+results_irt_13 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .13,
+                             method = "tam")
+
+results_irt_14 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .14,
+                             method = "tam")
+results_irt_15 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .15,
+                             method = "tam")
+results_irt_20 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .20,
+                             method = "tam")
+
+results_irt_21 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .21,
+                             method = "tam")
+
+results_irt_22 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .22,
+                             method = "tam")
+results_irt_23 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .23,
+                             method = "tam")
+
+results_irt_24 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .24,
+                             method = "tam")
+
+results_irt_25 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .25,
+                             method = "tam")
+results_irt_30 = computation(data = irt_rmsd_tam1, 
+                             threshold =  .30,
+                             method = "tam")
+
+results_trt_12 = computation(data = trt_rmsd, 
+                             threshold =  .12,
+                             method = "trt")
+
+results_trt_13 = computation(data = trt_rmsd, 
+                             threshold =  .13,
+                             method = "trt")
+
+results_trt_14 = computation(data = trt_rmsd, 
+                             threshold =  .14,
+                             method = "trt")
+
+results_trt_15 = computation(data = trt_rmsd, 
+                             threshold =  .15,
+                             method = "trt")
+
+
+results_trt_20 = computation(data = trt_rmsd, 
+                             threshold =  .20,
+                             method = "trt")
+
+results_trt_21 = computation(data = trt_rmsd, 
+                             threshold =  .21,
+                             method = "trt")
+
+results_trt_22 = computation(data = trt_rmsd, 
+                             threshold =  .22,
+                             method = "trt")
+
+results_trt_23 = computation(data = trt_rmsd, 
+                             threshold =  .23,
+                             method = "trt")
+
+results_trt_24 = computation(data = trt_rmsd, 
+                             threshold =  .24,
+                             method = "trt")
+
+
+results_trt_25 = computation(data = trt_rmsd, 
+                             threshold =  .25,
+                             method = "trt")
+
+results_trt_30 = computation(data = trt_rmsd, 
+                             threshold =  .30,
+                             method = "trt")
+
+```
+
+```{r}
+names(irt_rmsd)[11:71] <- paste0("Group", 1:61)
+
+
+results_irt_10 = computation(data = irt_rmsd, 
+                             threshold =  .10,
+                             method = "irt")
+results_irt_11 = computation(data = irt_rmsd, 
+                             threshold =  .11,
+                             method = "irt")
+
+
+results_irt_12 = computation(data = irt_rmsd, 
+                             threshold =  .12,
+                             method = "irt")
+
+results_irt_13 = computation(data = irt_rmsd, 
+                             threshold =  .13,
+                             method = "irt")
+
+results_irt_14 = computation(data = irt_rmsd, 
+                             threshold =  .14,
+                             method = "irt")
+results_irt_15 = computation(data = irt_rmsd, 
+                             threshold =  .15,
+                             method = "irt")
+results_irt_16 = computation(data = irt_rmsd, 
+                             threshold =  .16,
+                             method = "irt")
+results_irt_17 = computation(data = irt_rmsd, 
+                             threshold =  .17,
+                             method = "irt")
+results_irt_18 = computation(data = irt_rmsd, 
+                             threshold =  .18,
+                             method = "irt")
+
+results_irt_19 = computation(data = irt_rmsd, 
+                             threshold =  .19,
+                             method = "irt")
+
+results_irt_20 = computation(data = irt_rmsd, 
+                             threshold =  .20,
+                             method = "irt")
+
+results_irt_21 = computation(data = irt_rmsd, 
+                             threshold =  .21,
+                             method = "irt")
+
+results_irt_22 = computation(data = irt_rmsd, 
+                             threshold =  .22,
+                             method = "irt")
+results_irt_23 = computation(data = irt_rmsd, 
+                             threshold =  .23,
+                             method = "irt")
+
+results_irt_24 = computation(data = irt_rmsd, 
+                             threshold =  .24,
+                             method = "irt")
+
+results_irt_25 = computation(data = irt_rmsd, 
+                             threshold =  .25,
+                             method = "irt")
+results_irt_30 = computation(data = irt_rmsd, 
+                             threshold =  .30,
+                             method = "irt")
+
+results_trt_10 = computation(data = trt_rmsd, 
+                             threshold =  .10,
+                             method = "trt")
+results_trt_11 = computation(data = trt_rmsd, 
+                             threshold =  .11,
+                             method = "trt")
+
+results_trt_12 = computation(data = trt_rmsd, 
+                             threshold =  .12,
+                             method = "trt")
+
+results_trt_13 = computation(data = trt_rmsd, 
+                             threshold =  .13,
+                             method = "trt")
+
+results_trt_14 = computation(data = trt_rmsd, 
+                             threshold =  .14,
+                             method = "trt")
+
+results_trt_15 = computation(data = trt_rmsd, 
+                             threshold =  .15,
+                             method = "trt")
+
+results_trt_16 = computation(data = trt_rmsd, 
+                             threshold =  .16,
+                             method = "trt")
+results_trt_17 = computation(data = trt_rmsd, 
+                             threshold =  .17,
+                             method = "trt")
+results_trt_18 = computation(data = trt_rmsd, 
+                             threshold =  .18,
+                             method = "trt")
+results_trt_19 = computation(data = trt_rmsd, 
+                             threshold =  .19,
+                             method = "trt")
+
+
+results_trt_20 = computation(data = trt_rmsd, 
+                             threshold =  .20,
+                             method = "trt")
+
+results_trt_21 = computation(data = trt_rmsd, 
+                             threshold =  .21,
+                             method = "trt")
+
+results_trt_22 = computation(data = trt_rmsd, 
+                             threshold =  .22,
+                             method = "trt")
+
+results_trt_23 = computation(data = trt_rmsd, 
+                             threshold =  .23,
+                             method = "trt")
+
+results_trt_24 = computation(data = trt_rmsd, 
+                             threshold =  .24,
+                             method = "trt")
+
+
+results_trt_25 = computation(data = trt_rmsd, 
+                             threshold =  .25,
+                             method = "trt")
+
+results_trt_30 = computation(data = trt_rmsd, 
+                             threshold =  .30,
+                             method = "trt")
+
+```
+
+```{r}
+results10 = rbind(results_irt_10, results_trt_10)
+results10$threshold = .10
+results11 = rbind(results_irt_11, results_trt_11)
+results11$threshold = .11
+
+results12 = rbind(results_irt_12, results_trt_12)
+results12$threshold = .12
+results13 = rbind(results_irt_13, results_trt_13)
+results13$threshold = .13
+results14 = rbind(results_irt_14, results_trt_14)
+results14$threshold = .14
+results15 = rbind(results_irt_15, results_trt_15)
+results15$threshold = .15
+results16 = rbind(results_irt_16, results_trt_16)
+results16$threshold = .16
+results17 = rbind(results_irt_17, results_trt_17)
+results17$threshold = .17
+results18 = rbind(results_irt_18, results_trt_18)
+results18$threshold = .18
+results19 = rbind(results_irt_19, results_trt_19)
+results19$threshold = .19
+results20 = rbind(results_irt_20, results_trt_20)
+results20$threshold = .20
+results21 = rbind(results_irt_21, results_trt_21)
+results21$threshold = .21
+results22 = rbind(results_irt_22, results_trt_22)
+results22$threshold = .22
+results23 = rbind(results_irt_23, results_trt_23)
+results23$threshold = .23
+results24 = rbind(results_irt_24, results_trt_24)
+results24$threshold = .24
+results25 = rbind(results_irt_25, results_trt_25)
+results25$threshold = .25
+results30 = rbind(results_irt_30, results_trt_30)
+results30$threshold = .30
+
+all_results = rbind(results10, results11,
+                    results12, results13, results14, results15,
+                    results16, results17, results18, results19,
+                    results20, results21, results22, results23, results24, results25,
+                    results30)
+
+```
+
+# Cleaning the results
+
+```{r}
+all_results[1:7] %>%
+  apply(., 2, FUN = table)
+
+all_results1 = all_results %>%
+  mutate(DIFgrp = case_when(DIFgrp == "No DIF" ~ "No DIF",
+                            DIFgrp == "Low" ~ "Low",
+                            DIFgrp == "Med" ~ "Medium"),
+         DIFmmb = case_when(DIFmmb == 0   ~ "No DIF",
+                            DIFmmb == 0.31 ~ "S",
+                            DIFmmb == 0.45 ~ "M",
+                            DIFmmb == 1.40 ~ "L"),
+         DIFmma = case_when(DIFmma == 0 ~ "No DIF",
+                            DIFmma == 0.1 ~ "S",
+                            DIFmma == 0.39 ~ "M",
+                            DIFmma == 0.91 ~ "L"),
+         DIFper = case_when(DIFper == 0 ~ "No DIF",
+                            DIFper == 1 ~ "5 %",
+                            DIFper == 2 ~ "11 %",
+                            DIFper == 3 ~ "19 %"),
+         DIFtype = case_when(DIFtype == "No DIF" ~ "No DIF",
+                             DIFtype == "non-uniform" ~ "Non-uniform DIF",
+                             DIFtype == "uniform" ~ "Uniform DIF"),
+         effectT = case_when(effectT == 0 ~ "No T.E.",
+                             effectT == 0.1 ~ "Small",
+                             effectT == 0.3 ~ "Moderate",
+                             effectT == 0.5 ~ "Large"),
+         rmsd_mod = case_when(rmsd_mod == "irt" ~ "IRT",
+                              rmsd_mod == "trt" ~ "TRT")) %>%
+  mutate(DIFgrp = factor(DIFgrp, levels = c("No DIF", "Low", "Medium")),
+         DIFmmb = factor(DIFmmb, levels = c("No DIF", "S", "M", "L")),
+         DIFmma = factor(DIFmma, levels = c("No DIF", "S", "M", "L")),
+         DIFper = factor(DIFper, levels = c("No DIF", "5 %", "11 %", "19 %")),
+         DIFtype = factor(DIFtype, levels = c("No DIF", "Uniform DIF", "Non-uniform DIF")),
+         effectT = factor(effectT, levels = c("No T.E.", "Small", "Moderate", "Large")),
+         rmsd_mod = factor(rmsd_mod, levels = c("IRT", "TRT")))
+
+
+save(all_results1, file = "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/ave_results.Rdata")
+```
+
+
+# Table 1
+
+```{r}
+path =  "W:/OneDrive - Indiana University/Dissertation/Data Analysis/Paper 3/Graphs and Tables/"
+
+
+table1 = all_results1 %>%
+  filter(DIFgrp == "No DIF") %>%
+  select(DIFgrp, effectT, rmsd_mod, threshold, typeIerror)
+
+table1a = dcast(table1, effectT+rmsd_mod ~ threshold)
+
+write.csv(table1a, file = paste0(path, "Table 1 v2.100 draft.csv"))
+```
+
+# Table 2
+
+```{r}
+table2 = all_results1 %>%
+  filter(threshold == .12 & DIFtype == "Uniform DIF" ) %>%
+  select("DIFgrp","DIFmmb", "DIFmma", "DIFper", "DIFtype", "effectT",
+         "rmsd_mod", "threshold", "typeIerror_C2" )
+
+table2a = dcast(table2, DIFgrp+DIFmmb+DIFper ~ rmsd_mod+threshold+effectT)
+
+write.csv(table2a, file = paste0(path, "Table TIError 2 uniform draft.csv"))
+
+
+table2 = all_results1 %>%
+  filter(threshold == .12 & DIFtype == "Non-uniform DIF" ) %>%
+  select("DIFgrp","DIFmmb", "DIFmma", "DIFper", "DIFtype", "effectT",
+         "rmsd_mod", "threshold", "typeIerror_C2" )
+
+table2b = dcast(table2, DIFgrp+DIFmma+DIFper ~ rmsd_mod+threshold+effectT)
+
+write.csv(table2b, file = paste0(path, "Table TIError 2 Non uniform draft.csv"))
+
+
+```
+
+
+# Table 3
+
+```{r}
+table3 = all_results1 %>%
+  filter(threshold == .14 & DIFtype == "Uniform DIF" ) %>%
+  select("DIFgrp","DIFmmb", "DIFmma", "DIFper", "DIFtype", "effectT",
+         "rmsd_mod", "threshold", "typeIerror_C2" )
+
+table3a = dcast(table3, DIFgrp+DIFmmb+DIFper ~ rmsd_mod+threshold+effectT)
+
+write.csv(table3a, file = paste0(path, "Table TIError 4 uniform 14 draft.csv"))
+
+
+table3 = all_results1 %>%
+  filter(threshold == .14 & DIFtype == "Non-uniform DIF" ) %>%
+  select("DIFgrp","DIFmmb", "DIFmma", "DIFper", "DIFtype", "effectT",
+         "rmsd_mod", "threshold", "typeIerror_C2" )
+
+table3b = dcast(table3, DIFgrp+DIFmma+DIFper ~ rmsd_mod+threshold+effectT)
+
+write.csv(table3b, file = paste0(path, "Table TIError 4 Non uniform 14 draft.csv"))
+
+
+table3 = all_results1 %>%
+  filter(threshold == .14 & DIFtype == "Uniform DIF" ) %>%
+  select("DIFgrp","DIFmmb", "DIFmma", "DIFper", "DIFtype", "effectT",
+         "rmsd_mod", "threshold", "power" )
+
+table3c = dcast(table3, DIFgrp+DIFmmb+DIFper ~ rmsd_mod+threshold+effectT)
+
+write.csv(table3c, file = paste0(path, "Table Power 4 uniform 14 draft.csv"))
+
+table3 = all_results1 %>%
+  filter(threshold == .14 & DIFtype == "Non-uniform DIF"  ) %>%
+  select("DIFgrp","DIFmmb", "DIFmma", "DIFper", "DIFtype", "effectT",
+         "rmsd_mod", "threshold", "power" )
+
+table3d = dcast(table3, DIFgrp+DIFmma+DIFper ~ rmsd_mod+threshold+effectT)
+
+write.csv(table3d, file = paste0(path, "Table Power 4 Non uniform 14 draft.csv"))
+
+
+```
+
+
+# Figure not use of misidentification rates
+
+```{r}
+all_results1 %>%
+  filter(threshold == .22 & rmsd_mod == "IRT" & DIFtype == "Uniform DIF" |
+         threshold == .20 & rmsd_mod == "TRT" & DIFtype == "Uniform DIF") %>%
+  ggplot(.,
+       mapping=aes(x=DIFmmb, y=typeIerror, shape = effectT,
+                  group = effectT, linetype = effectT
+                  ))+
+  geom_point(alpha = 0.5, size = 3)+
+  geom_line()+
+  #scale_linetype_manual(values=c( "longdash","solid", "dotted")) +
+  ylim(0, 1)+
+  #scale_y_continuous( breaks=c(0, .05, .20, .40, .60, .80, 1.00))+
+ 
+  #facet_grid(DIFper ~  .)+
+  facet_grid( DIFper  ~ DIFgrp +rmsd_mod )+
+  geom_hline(yintercept = .05, color = "grey")+
+  labs( x = "Difficulty Parameter DIF magnitude" , y= "Type I Error",
+        #shape = "Country", 
+        shape = "DIF percentage")+
+  #scale_shape(guide = TRUE) +
+  scale_linetype(guide = FALSE)+
+  theme_apa(
+  legend.font.size = 12,
+  x.font.size = 12,
+  y.font.size = 12)
+
+```
+
+# Figure 1
+
+```{r}
+all_results1 %>%
+  filter(threshold == .12 & DIFgrp != "No DIF" & DIFtype == "Uniform DIF") %>%
+  ggplot(.,
+       mapping=aes(x=DIFmmb, y=power, shape = effectT,
+                  group = effectT, linetype = effectT
+                  ))+
+  geom_point(alpha = 0.5, size = 3)+
+  geom_line()+
+  #scale_linetype_manual(values=c( "longdash","solid", "dotted")) +
+  ylim(0, 1)+
+  #scale_y_continuous( breaks=c(0, .05, .20, .40, .60, .80, 1.00))+
+ 
+  #facet_grid(DIFper ~  .)+
+  facet_grid( DIFper  ~ DIFgrp +rmsd_mod )+
+  geom_hline(yintercept = .80, color = "grey")+
+  labs( x = "Difficulty Parameter DIF magnitude" , y= "Power",
+        #shape = "Country", 
+        shape = "DIF percentage")+
+  #scale_shape(guide = TRUE) +
+  scale_linetype(guide = FALSE)+
+  theme_apa(legend.font.size = 12,  x.font.size = 12, y.font.size = 12)
+
+ggsave(filename = paste0(path, "/Power Uniform v100.png"), 
+         device = "png",
+        width = 30, height = 16, units = "cm")
+
+# to help with writing 
+fig1 = all_results1 %>%
+  filter(threshold == .12 & DIFgrp != "No DIF" & DIFtype == "Uniform DIF") 
+
+diss1 = all_results1 %>%
+  filter(threshold == .12 & DIFgrp != "No DIF" ) %>%
+  mutate(l6 = case_when(power >.6 ~1,
+                        power <=.6 ~0),
+         l082 = case_when(power >.082 ~1,
+                        power <=.082 ~0))
+
+diss2 = all_results1 %>%
+  filter(threshold == .3 & DIFgrp != "No DIF" )  %>%
+  mutate(l6 = case_when(power >.6 ~1,
+                        power <=.6 ~0),
+         l082 = case_when(power >.082 ~1,
+                        power <=.082 ~0))
+```
+
+# Figure 2
+
+```{r}
+all_results1 %>%
+  filter(threshold == .12 & DIFgrp != "No DIF" & DIFtype == "Non-uniform DIF") %>%
+  ggplot(.,
+       mapping=aes(x=DIFmma, y=power, shape = effectT,
+                  group = effectT, linetype = effectT
+                  ))+
+  geom_point(alpha = 0.5, size = 3)+
+  geom_line()+
+  #scale_linetype_manual(values=c( "longdash","solid", "dotted")) +
+  ylim(0, 1)+
+  #scale_y_continuous( breaks=c(0, .05, .20, .40, .60, .80, 1.00))+
+ 
+  #facet_grid(DIFper ~  .)+
+  facet_grid( DIFper  ~ DIFgrp +rmsd_mod )+
+  geom_hline(yintercept = .80, color = "grey")+
+  labs( x = "Discrimination Parameter DIF magnitude" , y= "Power",
+        #shape = "Country", 
+        shape = "DIF percentage")+
+  #scale_shape(guide = TRUE) +
+  scale_linetype(guide = FALSE)+
+  theme_apa(legend.font.size = 12,  x.font.size = 12, y.font.size = 12)
+
+ggsave(filename = paste0(path, "/Power Non Uniform v100.png"), 
+         device = "png",
+        width = 30, height = 16, units = "cm")
+
+fig2 = all_results1 %>%
+  filter(threshold == .12 & DIFgrp != "No DIF" & DIFtype == "Non-uniform DIF")
+```
+
+# Figure 3
+
+
+```{r}
+all_results1 %>%
+  filter(threshold == .22 & rmsd_mod == "IRT" & DIFtype == "Non-uniform DIF" |
+         threshold == .22 & rmsd_mod == "TRT" & DIFtype == "Non-uniform DIF") %>%
+  ggplot(.,
+       mapping=aes(x=DIFmma, y=typeIerror_C2, shape = effectT,
+                  group = effectT, linetype = effectT
+                  ))+
+  geom_point(alpha = 0.5, size = 3)+
+  geom_line()+
+  #scale_linetype_manual(values=c( "longdash","solid", "dotted")) +
+  ylim(0, 1)+
+  #scale_y_continuous( breaks=c(0, .05, .20, .40, .60, .80, 1.00))+
+ 
+  #facet_grid(DIFper ~  .)+
+  facet_grid( DIFper  ~ DIFgrp +rmsd_mod )+
+  geom_hline(yintercept = .05, color = "grey")+
+  labs( x = "Discrimination Parameter DIF magnitude" , y= "Type I Error",
+        #shape = "Country", 
+        shape = "DIF percentage")+
+  #scale_shape(guide = TRUE) +
+  scale_linetype(guide = FALSE)+
+  theme_apa( legend.use.title = TRUE,
+  legend.font.size = 12,
+  x.font.size = 12,
+  y.font.size = 12)
+ggsave(filename = paste0(path, "/Graphs/Type I Error 23_500.png"), 
+         device = "tiff", dpi = 300,
+        width = 25, height = 15, units = "cm", compression = "lzw")
+```
+
+# Figure 4
+
+```{r}
+all_results1 %>%
+  filter(threshold == .14 & rmsd_mod == "IRT" & DIFtype == "Non-uniform DIF" |
+         threshold == .14 & rmsd_mod == "TRT" & DIFtype == "Non-uniform DIF") %>%
+  ggplot(.,
+       mapping=aes(x=DIFmma, y=power, shape = effectT,
+                  group = effectT, linetype = effectT
+                  ))+
+  geom_point(alpha = 0.5, size = 3)+
+  geom_line()+
+  #scale_linetype_manual(values=c( "longdash","solid", "dotted")) +
+  ylim(0, 1)+
+  #scale_y_continuous( breaks=c(0, .05, .20, .40, .60, .80, 1.00))+
+ 
+  #facet_grid(DIFper ~  .)+
+  facet_grid( DIFper  ~ DIFgrp +rmsd_mod )+
+  geom_hline(yintercept = .80, color = "grey")+
+  labs( x = "Discrimination Parameter DIF magnitude" , y= "Power",
+        #shape = "Country", 
+        shape = "DIF percentage")+
+  #scale_shape(guide = TRUE) +
+  scale_linetype(guide = FALSE)+
+  theme_apa()
+```
+
+
+
